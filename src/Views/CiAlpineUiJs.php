@@ -8,56 +8,74 @@
             return new Proxy(Alpine.$data(el), {
                 
                 get(_, method) {
-                    
-                    if (method in _ && typeof _[method] !== 'function') {
-                        return _[method];
-                    }
+                    if (method in _ && typeof _[method] !== 'function') return _[method];
                     
                     const callBackend = async (...args) => {
 
-                        // replace forms in formData
-                        args.forEach((arg, index) => {
-                            if (arg.tagName == 'FORM') {
-                                args[index] = Object.fromEntries(new FormData(arg))
+                        let meta = {};
+                        if (args[0] && typeof args[0] === 'object' && (args[0].skip || args[0].only)) {
+                            meta = args.shift();
+                            if (meta.skip && meta.only) {
+                                throw new Error('The parameters "skip" and "only" cannot be used simultaneously.');
                             }
-                        })
+                        }
+
+                        // --- convert FormData in Object ---
+                        args.forEach((arg, index) => {
+                            if (arg?.tagName === 'FORM') {
+                                args[index] = Object.fromEntries(new FormData(arg));
+                            }
+                        });
 
                         const componentData = Alpine.$data(el);
 
-                        const oldData = JSON.parse(JSON.stringify(componentData))
+                        const oldData = JSON.parse(JSON.stringify(componentData));
 
-                        const root = Alpine.closestRoot(el)
-                        const componentId = root.getAttribute('x-id') || null
+                        const root = Alpine.closestRoot(el);
+                        const componentId = root.getAttribute('x-id') || null;
                         const componentAttr = root.getAttribute('x-component');
-                        if (!componentAttr) {
-                            throw new Error('Missing x-component attribute in root element');
-                        }
+                        if (!componentAttr) throw new Error('Missing x-component attribute in root element');
                         const componentName = componentAttr.replaceAll('\\', '/');
 
-                        const body = {
-                            component: { 
-                                id: componentId,
-                                name: componentName,
-                            },
-                            data: oldData,
-                            request: {
-                                action: method,
-                                params: args,
+                        let filteredData = {};
+                        if (meta.only) {
+                            for (const key of meta.only) {
+                                if (key in oldData) filteredData[key] = oldData[key];
+                            }
+                        } else {
+                            filteredData = { ...oldData };
+                            if (meta.skip) {
+                                for (const key of meta.skip) delete filteredData[key];
                             }
                         }
 
-                        const url = 'component'
+                        const body = {
+                            component: { id: componentId, name: componentName },
+                            data: filteredData,
+                            request: { action: method, params: args },
+                        };
+
+                        const url = 'component';
                         const response = await fetch(url, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(body)
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
                         });
 
                         if (!response.ok) {
-                            const errorText = await response.text();
-                            throw new Error(`Server responded with ${response.status}`);
+                            const text = await response.text();
+
+                            // window.addEventListener('cell:http-error', e => {
+                            //     const { status, message } = e.detail;
+                            //     console.log('Global Error Handler:', status, message);
+                            //     if (status === 401) location.href = '/login';
+                            // });
+
+                            window.dispatchEvent(new CustomEvent('cell:http-error', {
+                                detail: { status: response.status, message: text }
+                            }));
+                            
+                            throw new Error(`Server responded with ${response.status}: ${text}`);
                         }
 
                         const result = await response.json();
@@ -75,7 +93,7 @@
                         
                         for (const key in result) {
                             if (typeof componentData[key] !== 'function') {
-                                componentData[key] = result[key]
+                                componentData[key] = result[key];
                             }
                         }
 
@@ -89,15 +107,13 @@
                     
                                     return (delay, ...args) => {
                                         const ms = parseInt(delay);
-                                        if (isNaN(ms)) {
-                                            throw new Error(`Invalid interval delay: ${delay}`);
-                                        }
+                                    if (isNaN(ms)) throw new Error(`Invalid interval delay: ${delay}`);
 
                                         const timer = setInterval(() => target(...args), ms);
 
                                         el.__cellTimers.add(timer);
 
-                                        if (Alpine.version && Alpine.version.startsWith('3.13')) {
+                                    if (typeof $cleanup === 'function') {
                                             $cleanup(() => {
                                                 clearInterval(timer);
                                                 el.__cellTimers.delete(timer);
@@ -118,12 +134,8 @@
                     });
 
                     return cellProxy;
-
-                }
+                },
             });
         });
-
-    
-
-     })
+    });
  </script>
