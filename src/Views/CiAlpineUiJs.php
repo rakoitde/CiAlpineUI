@@ -107,7 +107,7 @@
                     
                                     return (delay, ...args) => {
                                         const ms = parseInt(delay);
-                                    if (isNaN(ms)) throw new Error(`Invalid interval delay: ${delay}`);
+                                        if (isNaN(ms)) return null;
 
                                         const timer = setInterval(() => target(...args), ms);
 
