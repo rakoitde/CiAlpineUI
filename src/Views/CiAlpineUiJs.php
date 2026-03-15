@@ -55,7 +55,7 @@
                             request: { action: method, params: args },
                         };
 
-                        const url = 'component';
+                        const url = '/component';
                         const response = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
