@@ -15,6 +15,8 @@ class CiAlpineUiController extends ResourceController
 {
     protected $component;
 
+    protected bool $encrypt = true;
+
     /**
      * Return an array of resource objects, themselves in array format.
      *
@@ -71,7 +73,9 @@ class CiAlpineUiController extends ResourceController
             return null;
         }
 
-        $viewCellClass = str_replace('/', '\\', $request['component']['name']);
+        $component = $this->decryptString($request['component']['name']);
+
+        $viewCellClass = str_replace('/', '\\', $component);
         if (! class_exists($viewCellClass)) {
             $viewCellClass = 'App\Cells\\' . $viewCellClass;
         }
@@ -86,6 +90,13 @@ class CiAlpineUiController extends ResourceController
         }
 
         return null;
+    }
+
+    protected function decryptString(?string $value): ?string
+    {
+        if (!$value || !$this->encrypt) return $value;
+
+        return service('encrypter')->decrypt(base64_decode($value));
     }
 
     protected function getParameter($request)
