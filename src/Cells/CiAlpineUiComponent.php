@@ -13,8 +13,12 @@ class CiAlpineUiComponent extends Cell
     use ResponseTrait;
 
     protected ResponseInterface $response;
+
     protected bool $returnAsHtml     = true;
+    
     protected ?array $propertiesOnly = null;
+    
+    protected bool $encrypt = true;
 
     protected function asJson(?array $propertiesOnly = null): self
     {
@@ -48,7 +52,10 @@ class CiAlpineUiComponent extends Cell
 
     public function getComponentProperties()
     {
-        return str_replace('"', "'", json_encode($this->getPublicProperties()));
+        return str_replace('"', "'", 
+            json_encode(
+                $this->getPublicProperties(),
+                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE));
     }
 
     public function getDataProperties()
@@ -64,7 +71,8 @@ class CiAlpineUiComponent extends Cell
 
     public function getXComponentTag()
     {
-        return 'x-component="' . \str_replace('App\Cells\\', '', static::class) . '"';
+        $component = $this->encryptString(\str_replace('App\Cells\\', '', static::class));
+        return 'x-component="' . $component . '"';
     }
 
     public function getXTags()
@@ -87,6 +95,22 @@ class CiAlpineUiComponent extends Cell
         }
 
         return $publicProperties;
+    }
+
+    protected function encryptString(?string $value): ?string
+    {
+        if (!$value || !$this->encrypt) return $value;
+
+        return base64_encode(service('encrypter')->encrypt($value));
+    }
+
+    protected function decryptString(null|string $string): ?string
+    {
+        if (null==$string) return null;
+
+        return $this->encrypt
+            ? service('encrypter')->decrypt(base64_decode($string))
+            : $string;
     }
 
     /**
