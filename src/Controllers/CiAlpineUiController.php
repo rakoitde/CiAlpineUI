@@ -15,8 +15,6 @@ class CiAlpineUiController extends ResourceController
 {
     protected $component;
 
-    protected bool $encrypt = true;
-
     /**
      * Return an array of resource objects, themselves in array format.
      *
@@ -94,7 +92,9 @@ class CiAlpineUiController extends ResourceController
 
     protected function decryptString(?string $value): ?string
     {
-        if (!$value || !$this->encrypt) return $value;
+        if (config('CiAlpineUI')->encrypt == false) return $value;
+
+        if (null === $value) return $value;
 
         return service('encrypter')->decrypt(base64_decode($value));
     }
