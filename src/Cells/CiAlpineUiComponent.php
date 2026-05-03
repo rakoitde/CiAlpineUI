@@ -18,8 +18,6 @@ class CiAlpineUiComponent extends Cell
     
     protected ?array $propertiesOnly = null;
     
-    protected bool $encrypt = true;
-
     protected function asJson(?array $propertiesOnly = null): self
     {
         if ($propertiesOnly) {
