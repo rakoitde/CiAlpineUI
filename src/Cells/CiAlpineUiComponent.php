@@ -99,18 +99,17 @@ class CiAlpineUiComponent extends Cell
 
     protected function encryptString(?string $value): ?string
     {
-        if (!$value || !$this->encrypt) return $value;
+        if (config('CiAlpineUI')->encrypt == false) return $value;
 
         return base64_encode(service('encrypter')->encrypt($value));
     }
 
-    protected function decryptString(null|string $string): ?string
+    protected function decrypt_String(null|string $string): ?string
     {
         if (null==$string) return null;
+        if (config('CiAlpineUI')->encrypt == false) return $string;
 
-        return $this->encrypt
-            ? service('encrypter')->decrypt(base64_decode($string))
-            : $string;
+        return service('encrypter')->decrypt(base64_decode($string));
     }
 
     /**
