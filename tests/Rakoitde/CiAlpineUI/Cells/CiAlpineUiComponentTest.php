@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Rakoitde\CiAlpineUI\Cells;
 
 use CodeIgniter\Test\CIUnitTestCase;
-use Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponent;
 
-class CiAlpineUiComponentTest extends CIUnitTestCase
+/**
+ * @internal
+ */
+final class CiAlpineUiComponentTest extends CIUnitTestCase
 {
-
-    public function testReturnAsHtml()
+    public function testReturnAsHtml(): void
     {
         $ciAlpineUiComponent = new CiAlpineUiComponent();
 
@@ -20,35 +23,34 @@ class CiAlpineUiComponentTest extends CIUnitTestCase
 
         $this->setPrivateProperty($ciAlpineUiComponent, 'returnAsHtml', true);
         $this->assertTrue($this->getPrivateProperty($ciAlpineUiComponent, 'returnAsHtml'));
-        
+
         $this->setPrivateProperty($ciAlpineUiComponent, 'returnAsHtml', false);
         $this->assertFalse($this->getPrivateProperty($ciAlpineUiComponent, 'returnAsHtml'));
     }
 
-    public function testGetOnlyPublicProperties()
+    public function testGetOnlyPublicProperties(): void
     {
         $ciAlpineUiComponent = new CiAlpineUiComponent();
 
         $this->assertIsArray($ciAlpineUiComponent->getOnlyPublicProperties());
-        $this->assertEquals([], $ciAlpineUiComponent->getOnlyPublicProperties());
+        $this->assertSame([], $ciAlpineUiComponent->getOnlyPublicProperties());
     }
 
-    public function testGetXDataTag()
+    public function testGetXDataTag(): void
     {
         $ciAlpineUiComponent = new CiAlpineUiComponent();
-        $this->assertEquals('x-data="[]"', $ciAlpineUiComponent->getXDataTag());
+        $this->assertSame('x-data="[]"', $ciAlpineUiComponent->getXDataTag());
     }
 
-    public function testGetXComponentTag()
+    public function testGetXComponentTag(): void
     {
         $ciAlpineUiComponent = new CiAlpineUiComponent();
-        $this->assertEquals('x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponent"', $ciAlpineUiComponent->getXComponentTag());
-    }
-    
-    public function testGetXTags()
-    {
-        $ciAlpineUiComponent = new CiAlpineUiComponent();
-        $this->assertEquals('x-data="[]" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponent"', $ciAlpineUiComponent->getXTags());
+        $this->assertSame('x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponent"', $ciAlpineUiComponent->getXComponentTag());
     }
 
+    public function testGetXTags(): void
+    {
+        $ciAlpineUiComponent = new CiAlpineUiComponent();
+        $this->assertSame('x-data="[]" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponent"', $ciAlpineUiComponent->getXTags());
+    }
 }

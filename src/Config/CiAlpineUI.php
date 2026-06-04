@@ -13,8 +13,6 @@ class CiAlpineUI extends BaseConfig
 {
     /**
      * Encrypt component names
-     *
-     * @var boolean
      */
     public bool $encrypt = true;
 }

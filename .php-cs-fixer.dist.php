@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use CodeIgniter\CodingStandard\CodeIgniter4;
 use Nexus\CsConfig\Factory;
 use PhpCsFixer\Finder;
@@ -8,7 +10,7 @@ $finder = Finder::create()
     ->files()
     ->in([
         __DIR__ . '/src/',
-        // __DIR__ . '/tests/',
+        __DIR__ . '/tests/',
     ])
     ->exclude([
         'build',
@@ -20,7 +22,7 @@ $finder = Finder::create()
     ]);
 
 $overrides = [
-    // 'declare_strict_types' => true,
+    'declare_strict_types' => true,
     // 'void_return'          => true,
 ];
 

@@ -12,6 +12,11 @@
             "Rakoitde\\CiAlpineUI\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Rakoitde\\CiAlpineUI\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Kornberger, Ralf",
@@ -29,11 +34,7 @@
         }
     },
     "scripts": {
-        "analyze": [
-            "phpstan analyze",
-            "psalm",
-            "rector process --dry-run"
-        ],
+        "analyze": "phpstan analyze && psalm && rector process --dry-run",
         "test": "phpunit",
         "cs": [
             "php-cs-fixer fix --ansi --verbose --dry-run --diff"
