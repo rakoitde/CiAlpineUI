@@ -1,23 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Rakoitde\CiAlpineUI\Cells;
 
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\Exceptions\LogicException;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\View\Cells\Cell;
 use ReflectionClass;
-use CodeIgniter\Exceptions\LogicException;
 
+/**
+ * Base class for all CiAlpineUI components.
+ *
+ * Extend this class to create Alpine.js-powered CI4 Cell components.
+ * Public properties are automatically serialized as x-data for Alpine.js.
+ */
 class CiAlpineUiComponent extends Cell
 {
     use ResponseTrait;
 
     protected ResponseInterface $response;
 
-    protected bool $returnAsHtml     = true;
-    
+    /**
+     * @var bool Whether the action response should return full rendered HTML.
+     */
+    protected bool $returnAsHtml = true;
+
+    /**
+     * @var list<string>|null Property filter applied when returning JSON.
+     */
     protected ?array $propertiesOnly = null;
-    
+
+    /**
+     * Switches the action response to JSON mode.
+     *
+     * @param list<string>|null $propertiesOnly Limit response to these public property names.
+     */
     protected function asJson(?array $propertiesOnly = null): self
     {
         if ($propertiesOnly) {
@@ -28,6 +47,11 @@ class CiAlpineUiComponent extends Cell
         return $this;
     }
 
+    /**
+     * Switches the action response to HTML mode (default).
+     *
+     * @param list<string>|null $propertiesOnly Unused in HTML mode; kept for API symmetry.
+     */
     protected function asHtml(?array $propertiesOnly = null): self
     {
         if ($propertiesOnly) {
@@ -38,47 +62,78 @@ class CiAlpineUiComponent extends Cell
         return $this;
     }
 
+    /**
+     * Returns whether this component will respond with HTML after an action call.
+     */
     public function returnAsHtml(): bool
     {
         return $this->returnAsHtml;
     }
 
-    public function getXDataTag()
+    /**
+     * Returns the Alpine.js x-data attribute string with all public properties as JSON.
+     */
+    public function getXDataTag(): string
     {
         return 'x-data="' . str_replace('"', "'", json_encode($this->getPublicProperties())) . '"';
     }
 
-    public function getComponentProperties()
+    /**
+     * Returns the serialized public properties as a JSON string, safe for HTML embedding.
+     */
+    public function getComponentProperties(): string
     {
-        return str_replace('"', "'", 
+        return str_replace(
+            '"',
+            "'",
             json_encode(
                 $this->getPublicProperties(),
-                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE));
+                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE,
+            ),
+        );
     }
 
-    public function getDataProperties()
+    /**
+     * Returns JavaScript lines mapping each public property to config values.
+     * Used inside the generated Alpine.js component data function.
+     */
+    public function getDataProperties(): string
     {
         $properties = '';
 
-        foreach ($this->getPublicProperties() as $property => $value) {
+        foreach (array_keys($this->getPublicProperties()) as $property) {
             $properties .= "\t\t\t" . $property . ': config.' . $property . ' ?? null,' . PHP_EOL;
         }
 
         return $properties;
     }
 
-    public function getXComponentTag()
+    /**
+     * Returns the Alpine.js x-component attribute string with the (optionally encrypted) class name.
+     */
+    public function getXComponentTag(): string
     {
         $component = $this->encryptString(\str_replace('App\Cells\\', '', static::class));
+
         return 'x-component="' . $component . '"';
     }
 
-    public function getXTags()
+    /**
+     * Returns both Alpine.js attribute strings (x-data and x-component) for use in a view's root element.
+     *
+     * Usage: <div <?= $this->getXTags() ?>>
+     */
+    public function getXTags(): string
     {
         return $this->getXDataTag() . ' ' . $this->getXComponentTag();
     }
 
-    public function getOnlyPublicProperties()
+    /**
+     * Returns the component's public properties, filtered by $propertiesOnly when set.
+     *
+     * @return array<string, mixed>
+     */
+    public function getOnlyPublicProperties(): array
     {
         if (! isset($this->propertiesOnly)) {
             return $this->getPublicProperties();
@@ -95,19 +150,31 @@ class CiAlpineUiComponent extends Cell
         return $publicProperties;
     }
 
+    /**
+     * Encrypts a string using the CI4 encrypter service when encryption is enabled.
+     */
     protected function encryptString(?string $value): ?string
     {
-        if (config('CiAlpineUI')->encrypt == false) return $value;
+        if (config('CiAlpineUI')->encrypt === false) {
+            return $value;
+        }
 
         return base64_encode(service('encrypter')->encrypt($value));
     }
 
-    protected function decryptString(null|string $string): ?string
+    /**
+     * Decrypts a string using the CI4 encrypter service when encryption is enabled.
+     */
+    protected function decryptString(?string $string): ?string
     {
-        if (null==$string) return null;
-        if (config('CiAlpineUI')->encrypt == false) return $string;
+        if (null === $string) {
+            return null;
+        }
+        if (config('CiAlpineUI')->encrypt === false) {
+            return $string;
+        }
 
-        return service('encrypter')->decrypt(base64_decode($string));
+        return service('encrypter')->decrypt(base64_decode($string, true));
     }
 
     /**
@@ -131,6 +198,8 @@ class CiAlpineUiComponent extends Cell
      * current scope and captures the output buffer instead of
      * relying on the view service.
      *
+     * @param array<string, mixed> $data
+     *
      * @throws LogicException
      */
     final protected function cellview(?string $view, array $data = []): string
@@ -141,16 +210,15 @@ class CiAlpineUiComponent extends Cell
 
         $view = (string) $view;
 
-        $class = new ReflectionClass(get_class($this));
+        $class       = new ReflectionClass(static::class);
         $staticClass = static::class;
-        $class = new ReflectionClass(new $staticClass());
-        
-        $parents = [];
+        $class       = new ReflectionClass(new $staticClass());
+
+        $parents   = [];
         $parents[] = $class->getFileName();
-        
+
         while ($parent = $class->getParentClass()) {
             if ($parent->getName() !== 'CodeIgniter\View\Cells\Cell') {
-                $file = (new \CodeIgniter\Files\File($parent->getFileName()))->getPath();
                 $parents[] = $parent->getFileName();
             }
             $class = $parent;
@@ -196,6 +264,10 @@ class CiAlpineUiComponent extends Cell
     /**
      * Allows the developer to define computed properties
      * as methods with `get` prefixed to the protected/private property name.
+     *
+     * @param array<string, mixed> $properties
+     *
+     * @return array<string, mixed>
      */
     private function includeComputedProperties(array $properties): array
     {

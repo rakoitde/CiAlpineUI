@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Rakoitde\CiAlpineUI\Controllers;
 
 use CodeIgniter\HTTP\ResponseInterface;
@@ -11,12 +13,18 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 
+/**
+ * Handles all AJAX action requests from Alpine.js $cell magic.
+ *
+ * Receives a POST to /component, resolves and hydrates the component class,
+ * validates the requested action, dispatches it, and returns HTML or JSON.
+ */
 class CiAlpineUiController extends ResourceController
 {
     protected $component;
 
     /**
-     * Return an array of resource objects, themselves in array format.
+     * Entry point for all component action calls from the frontend.
      *
      * @return ResponseInterface
      */
@@ -44,7 +52,6 @@ class CiAlpineUiController extends ResourceController
 
         $action = $request['request']['action'];
 
-        // Check if action exists
         $viewCellClass = $this->component::class;
         if ($this->isNoPublicAction($action)) {
             return $this->fail("Method '{$action}' not found in component '{$viewCellClass}'");
@@ -65,7 +72,14 @@ class CiAlpineUiController extends ResourceController
         return $this->respond($this->component->getOnlyPublicProperties());
     }
 
-    protected function getComponent($request)
+    /**
+     * Resolves and instantiates the component class from the request payload.
+     *
+     * @param array<string, mixed> $request
+     *
+     * @throws Exception When the resolved class is not a CiAlpineUiComponent.
+     */
+    protected function getComponent(array $request): ?CiAlpineUiComponent
     {
         if (! isset($request['component'])) {
             return null;
@@ -90,21 +104,42 @@ class CiAlpineUiController extends ResourceController
         return null;
     }
 
+    /**
+     * Decrypts the component name when encryption is enabled.
+     */
     protected function decryptString(?string $value): ?string
     {
-        if (config('CiAlpineUI')->encrypt == false) return $value;
+        if (config('CiAlpineUI')->encrypt === false) {
+            return $value;
+        }
 
-        if (null === $value) return $value;
+        if (null === $value) {
+            return $value;
+        }
 
-        return service('encrypter')->decrypt(base64_decode($value));
+        return service('encrypter')->decrypt(base64_decode($value, true));
     }
 
-    protected function getParameter($request)
+    /**
+     * Extracts action parameters from the request payload.
+     *
+     * @param array<string, mixed> $request
+     *
+     * @return list<mixed>
+     */
+    protected function getParameter(array $request): array
     {
         return $request['request']['params'] ?? [];
     }
 
-    protected function getData($data)
+    /**
+     * Casts each incoming data value to the type declared on the corresponding public property.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function getData(array $data): array
     {
         $component = $this->component;
 
@@ -129,6 +164,11 @@ class CiAlpineUiController extends ResourceController
         return $data;
     }
 
+    /**
+     * Returns the names of all public methods on the component that may be called as actions.
+     *
+     * @return list<string>
+     */
     protected function getPublicMethodNamesFromClass(): array
     {
         $class   = new ReflectionClass($this->component);
@@ -152,16 +192,22 @@ class CiAlpineUiController extends ResourceController
         return array_diff(array_column($methods, 'name'), $nonePublicActions);
     }
 
-    protected function isNoPublicAction($action): bool
+    /**
+     * Returns true when the given action name is not a callable public method on the component.
+     */
+    protected function isNoPublicAction(string $action): bool
     {
         $publicMethodNames = $this->getPublicMethodNamesFromClass();
 
         return ! in_array($action, $publicMethodNames, true);
     }
 
-    protected function actionIsForbidden($action): bool
+    /**
+     * Returns true when a canAccess* guard method exists and returns false.
+     */
+    protected function actionIsForbidden(string $action): bool
     {
-        $method = 'canAccess' . ucfirst((string) $action);
+        $method = 'canAccess' . ucfirst($action);
 
         if ($this->isNoPublicAction($method)) {
             return false;

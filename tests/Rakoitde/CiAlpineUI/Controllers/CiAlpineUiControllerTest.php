@@ -1,25 +1,32 @@
 <?php
 
-namespace Rakoitde\CiAlpineUI\Cells;
+declare(strict_types=1);
 
+namespace Rakoitde\CiAlpineUI\Controllers;
+
+use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\URI;
+use CodeIgniter\HTTP\UserAgent;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\ControllerTestTrait;
+use Config\App;
+use Exception;
+use Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell;
 
-use Rakoitde\CiAlpineUI\Controllers\CiAlpineUiController;
-
-class CiAlpineUiControllerTest extends CIUnitTestCase
+/**
+ * @internal
+ */
+final class CiAlpineUiControllerTest extends CIUnitTestCase
 {
-
     use ControllerTestTrait;
 
-    public function testNoComponentFound()
+    public function testNoComponentFound(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
 
         $result = $this->withRequest($request)
@@ -27,22 +34,21 @@ class CiAlpineUiControllerTest extends CIUnitTestCase
             ->execute('index');
         $json = \json_decode($result->getJSON());
 
-        $this->assertEquals('No component found', $json->messages->error);
+        $this->assertSame('No component found', $json->messages->error);
         $result->assertStatus(400);
-        
     }
-    public function testNoActionSend()
+
+    public function testNoActionSend(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
 
         $body = json_encode([
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
         ]);
 
         $result = $this->withRequest($request)
@@ -50,25 +56,23 @@ class CiAlpineUiControllerTest extends CIUnitTestCase
             ->controller(CiAlpineUiController::class)
             ->execute('index');
         $json = \json_decode($result->getJSON());
-            
-        $this->assertEquals('no Action send', $json->messages->error);
+
+        $this->assertSame('no Action send', $json->messages->error);
         $result->assertStatus(400);
-        
     }
 
-    public function testActionNotFound()
+    public function testActionNotFound(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
 
         $body = json_encode([
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
-            'request' =>['action' => 'notFound'],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
+            'request'   => ['action' => 'notFound'],
         ]);
 
         $result = $this->withRequest($request)
@@ -76,85 +80,79 @@ class CiAlpineUiControllerTest extends CIUnitTestCase
             ->controller(CiAlpineUiController::class)
             ->execute('index');
         $json = \json_decode($result->getJSON());
-            
-        $this->assertEquals("Method 'notFound' not found in component 'Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell'", $json->messages->error);
+
+        $this->assertSame("Method 'notFound' not found in component 'Rakoitde\\CiAlpineUI\\Cells\\CiAlpineUiComponentTestCell'", $json->messages->error);
         $result->assertStatus(400);
-        
     }
 
-    public function testTestMethodNoPermission()
+    public function testTestMethodNoPermission(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
-        
+
         $body = json_encode([
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
-            'request' =>['action' => 'testNoPermission'],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
+            'request'   => ['action' => 'testNoPermission'],
         ]);
-        
+
         $result = $this->withRequest($request)
-        ->withBody($body)
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+            ->withBody($body)
+            ->controller(CiAlpineUiController::class)
+            ->execute('index');
 
         $json = \json_decode($result->getJSON());
 
-        $this->assertEquals("You have no permission to access 'testNoPermission' in component 'Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell'", $json->messages->error);
+        $this->assertSame("You have no permission to access 'testNoPermission' in component 'Rakoitde\\CiAlpineUI\\Cells\\CiAlpineUiComponentTestCell'", $json->messages->error);
         $result->assertStatus(403);
     }
 
-    public function testTestMethodHtmlResult()
+    public function testTestMethodHtmlResult(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
 
-        $ciAlpineUiComponent = (new CiAlpineUiComponentTestCell())->testNoPermission();
-        
         $body = json_encode([
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
-            'request' =>['action' => 'testAsHtml'],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
+            'request'   => ['action' => 'testAsHtml'],
         ]);
-        
+
         $result = $this->withRequest($request)
-        ->withBody($body)
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+            ->withBody($body)
+            ->controller(CiAlpineUiController::class)
+            ->execute('index');
 
         $json = \json_decode($result->getJSON());
 
-        $this->assertEquals('<div x-data="{\'canAccess\':false,\'boolVal\':false,\'intVal\':0,\'floatVal\':0,\'stringVal\':\'\',\'arrayVal\':[]}" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell"></div>', $json->html);
+        $this->assertSame('<div x-data="{\'canAccess\':false,\'boolVal\':false,\'intVal\':0,\'floatVal\':0,\'stringVal\':\'\',\'arrayVal\':[]}" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell"></div>', $json->html);
         $result->assertStatus(200);
     }
 
-    public function testTestMethodJsonResult()
+    public function testTestMethodJsonResult(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
-        
+
         $body = json_encode([
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
-            'request' =>['action' => 'testAsJson'],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
+            'request'   => ['action' => 'testAsJson'],
         ]);
-        
+
         $result = $this->withRequest($request)
-        ->withBody($body)
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+            ->withBody($body)
+            ->controller(CiAlpineUiController::class)
+            ->execute('index');
 
         $json = \json_decode($result->getJSON());
 
@@ -162,25 +160,24 @@ class CiAlpineUiControllerTest extends CIUnitTestCase
         $result->assertStatus(200);
     }
 
-    public function testTestMethodJsonResultWithProperties()
+    public function testTestMethodJsonResultWithProperties(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
-        
+
         $body = json_encode([
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
-            'request' =>['action' => 'testAsJsonWithProperties'],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
+            'request'   => ['action' => 'testAsJsonWithProperties'],
         ]);
-        
+
         $result = $this->withRequest($request)
-        ->withBody($body)
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+            ->withBody($body)
+            ->controller(CiAlpineUiController::class)
+            ->execute('index');
 
         $json = \json_decode($result->getJSON());
 
@@ -188,67 +185,54 @@ class CiAlpineUiControllerTest extends CIUnitTestCase
         $result->assertStatus(200);
     }
 
-    public function testTestComponentClassNotExists()
+    public function testTestComponentClassNotExists(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
-        
+
         $body = json_encode([
             'component' => ['name' => 'Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentNotExists'],
-            'request' =>['action' => 'testAsJsonWithProperties'],
+            'request'   => ['action' => 'testAsJsonWithProperties'],
         ]);
-        
+
         $result = $this->withRequest($request)
-        ->withBody($body)
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+            ->withBody($body)
+            ->controller(CiAlpineUiController::class)
+            ->execute('index');
 
         $json = \json_decode($result->getJSON());
 
-        $this->assertEquals('No component found', $json->messages->error);
+        $this->assertSame('No component found', $json->messages->error);
         $result->assertStatus(400);
     }
 
-    public function testTestComponentIsNotAnInstanceOfCiComponent()
+    public function testTestComponentIsNotAnInstanceOfCiComponent(): void
     {
-        
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
+        $request = new IncomingRequest(
+            new App(),
+            new URI('http://example.com/component'),
             null,
-            new \CodeIgniter\HTTP\UserAgent(),
+            new UserAgent(),
         );
-        
+
         $body = json_encode([
             'component' => ['name' => 'App\Controllers\Home'],
-            'request' =>['action' => 'testAsJsonWithProperties'],
+            'request'   => ['action' => 'testAsJsonWithProperties'],
         ]);
-        
-        $this->expectException(\Exception::class);
 
-        $result = $this->withRequest($request)
-        ->withBody($body)
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+        $this->expectException(Exception::class);
+
+        $this->withRequest($request)->withBody($body)->controller(CiAlpineUiController::class)->execute('index');
     }
 
-    public function testTestDataFormat()
+    public function testTestDataFormat(): void
     {
-
-        $request = new \CodeIgniter\HTTP\IncomingRequest(
-            new \Config\App(),
-            new \CodeIgniter\HTTP\URI('http://example.com/component'),
-            null,
-            new \CodeIgniter\HTTP\UserAgent(),
-        );
-
         $body = [
-            'component' => ['name' => \Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell::class],
+            'component' => ['name' => CiAlpineUiComponentTestCell::class],
             'data'      => [
                 'boolVal'   => true,
                 'intVal'    => 1,
@@ -257,27 +241,26 @@ class CiAlpineUiControllerTest extends CIUnitTestCase
                 'stringVal' => 'String',
                 'arrayVal'  => ['Array'],
             ],
-            'request'   => ['action' => 'testAsHtml'],
+            'request' => ['action' => 'testAsHtml'],
         ];
 
         $ciAlpineUiComponent = new CiAlpineUiComponentTestCell();
         $ciAlpineUiComponent->render();
 
-        $result = $this  #->withRequest($request)
-        ->withBody(json_encode($body))
-        ->controller(CiAlpineUiController::class)
-        ->execute('index');
+        $result = $this
+            ->withBody(json_encode($body))
+            ->controller(CiAlpineUiController::class)
+            ->execute('index');
 
         $json = json_decode($result->response()->getJSON());
 
-        $this->assertEquals('<div x-data="{\'canAccess\':false,\'boolVal\':true,\'intVal\':1,\'floatVal\':1.123,\'stringVal\':\'String\',\'arrayVal\':[\'Array\']}" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell"></div>', $json->html);
+        $this->assertSame('<div x-data="{\'canAccess\':false,\'boolVal\':true,\'intVal\':1,\'floatVal\':1.123,\'stringVal\':\'String\',\'arrayVal\':[\'Array\']}" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell"></div>', $json->html);
         $result->assertStatus(200);
     }
 
-    public function testComponentCouldRender()
+    public function testComponentCouldRender(): void
     {
         $ciAlpineUiComponent = new CiAlpineUiComponentTestCell();
-        $this->assertEquals('<div x-data="{\'canAccess\':false,\'boolVal\':false,\'intVal\':0,\'floatVal\':0,\'stringVal\':\'\',\'arrayVal\':[]}" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell"></div>', $ciAlpineUiComponent->render());
+        $this->assertSame('<div x-data="{\'canAccess\':false,\'boolVal\':false,\'intVal\':0,\'floatVal\':0,\'stringVal\':\'\',\'arrayVal\':[]}" x-component="Rakoitde\CiAlpineUI\Cells\CiAlpineUiComponentTestCell"></div>', $ciAlpineUiComponent->render());
     }
-
 }

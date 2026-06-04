@@ -51,6 +51,8 @@
         <const name="PUBLICPATH" value="./public/"/>
         <!-- https://getcomposer.org/xdebug -->
         <env name="COMPOSER_DISABLE_XDEBUG_WARN" value="1"/>
+        <!-- Disable encryption so tests can assert plain component class names -->
+        <env name="cialpineui.encrypt" value="false"/>
         <!-- Database configuration -->
         <env name="database.tests.strictOn" value="true"/>
         <!-- Uncomment to use alternate testing database configuration
