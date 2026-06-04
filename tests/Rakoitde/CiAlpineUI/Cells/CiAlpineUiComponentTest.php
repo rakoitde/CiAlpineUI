@@ -32,7 +32,6 @@ final class CiAlpineUiComponentTest extends CIUnitTestCase
     {
         $ciAlpineUiComponent = new CiAlpineUiComponent();
 
-        $this->assertIsArray($ciAlpineUiComponent->getOnlyPublicProperties());
         $this->assertSame([], $ciAlpineUiComponent->getOnlyPublicProperties());
     }
 
